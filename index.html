@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#FBF7F2" />
+  <meta name="robots" content="noindex" />
+  <title>Happy Birthday, Ammalu • Our Scrapbook</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <script>
+    tailwind.config = {
+      future: { hoverOnlyWhenSupported: true },
+      theme: {
+        extend: {
+          colors: {
+            cream: '#FBF7F2', parchment: '#F3ECE1', espresso: '#2C221E', cocoa: '#5A4A42',
+            rosewood: '#8E3B46', terracotta: '#C85A53', blush: '#E8A598', sage: '#6B8E78', gold: '#C69749',
+          },
+          fontFamily: {
+            serif: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+            hand: ['Caveat', 'cursive'],
+          },
+          boxShadow: {
+            polaroid: '0 10px 30px -5px rgba(44,34,30,.08), 0 4px 10px -2px rgba(44,34,30,.04)',
+            paper: '0 20px 40px -15px rgba(44,34,30,.12)',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html { scroll-behavior: auto; }
+    body {
+      background-color: #FBF7F2; color: #2C221E;
+      background-image: radial-gradient(#d8cec0 .75px, transparent .75px);
+      background-size: 24px 24px;
+      padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+      -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+    }
+    button, a { touch-action: manipulation; }
+    #step-bar { padding-bottom: env(safe-area-inset-bottom); }
+    #step-bar button { min-height: 44px; }
+    #dots button { position: relative; }
+    #dots button::after { content: ''; position: absolute; inset: -9px -4px; }
+    #game-canvas { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; overscroll-behavior: contain; }
+    @media (hover: none) { .kbd-hint { display: none; } }
+    :focus-visible { outline: 2px solid #8E3B46; outline-offset: 2px; }
+    .on-dark :focus-visible { outline-color: #E8A598; }
+
+    .step { display: none; }
+    .step.active { display: block; animation: fadeUp .35s ease both; }
+
+    .tape-strip { position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 96px; height: 26px;
+      background: rgba(232,165,152,.45); border-left: 1px dashed rgba(44,34,30,.15); border-right: 1px dashed rgba(44,34,30,.15); z-index: 10; }
+    .tape-gold { background: rgba(198,151,73,.42); }
+
+    .perspective-1000 { perspective: 1000px; }
+    .transform-style-3d { transform-style: preserve-3d; }
+    .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+
+    @keyframes stampPop { 0% { transform: scale(2.2) rotate(-20deg); opacity: 0; } 70% { transform: scale(.92) rotate(-8deg); opacity: 1; } 100% { transform: scale(1) rotate(-8deg); opacity: 1; } }
+    .stamp-active { animation: stampPop .38s cubic-bezier(.22,1,.36,1) forwards; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .fade-in { animation: fadeUp .35s ease both; }
+
+    .skeleton { height: 12px; border-radius: 999px; background: linear-gradient(90deg,#E9DFD0,#F3ECE1,#E9DFD0); }
+    @keyframes lineIn { from { opacity: 0; transform: translateY(6px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+    .line-in { animation: lineIn .6s ease both; }
+
+    #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
+    #game-canvas { touch-action: none; }
+    #next-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ---- motion: purposeful, tied to what she does ---- */
+    @keyframes slideInR { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+    @keyframes slideInL { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+    .step.active.fwd { animation: slideInR .5s cubic-bezier(.22,1,.36,1) both; }
+    .step.active.back { animation: slideInL .5s cubic-bezier(.22,1,.36,1) both; }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+    .rise { animation: rise .6s cubic-bezier(.22,1,.36,1) backwards; animation-delay: calc(var(--i, 0) * 80ms); }
+
+    @keyframes unwrap { 0% { opacity: 0; transform: perspective(700px) rotateX(-80deg) scale(.9); }
+      55% { opacity: 1; transform: perspective(700px) rotateX(12deg) scale(1.03); } 100% { opacity: 1; transform: none; } }
+    .unwrap { transform-origin: top center; animation: unwrap .65s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes wiggle { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-12deg); } 45% { transform: rotate(10deg); } 70% { transform: rotate(-6deg); } }
+    .group:hover .wiggle { animation: wiggle .6s ease-in-out; }
+
+    @keyframes slideChR { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+    @keyframes slideChL { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+    .ch-r { animation: slideChR .4s cubic-bezier(.22,1,.36,1) both; }
+    .ch-l { animation: slideChL .4s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes popIn { 0% { transform: scale(.6); } 60% { transform: scale(1.22); } 100% { transform: scale(1.1); } }
+    .pop-in { animation: popIn .4s cubic-bezier(.22,1,.36,1) both; }
+
+    @keyframes readyPulse { 0% { box-shadow: 0 0 0 0 rgba(142,59,70,.55); } 100% { box-shadow: 0 0 0 16px rgba(142,59,70,0); } }
+    .ready-pulse { animation: readyPulse 1s ease-out 3; }
+    @keyframes dotPulse { 0% { box-shadow: 0 0 0 0 rgba(142,59,70,.5); } 100% { box-shadow: 0 0 0 9px rgba(142,59,70,0); } }
+    .dot-here { animation: dotPulse 2.4s ease-out infinite; }
+
+    @keyframes correctPop { 0% { transform: scale(1); } 40% { transform: scale(1.035); } 100% { transform: scale(1); } }
+    .correct-pop { animation: correctPop .45s ease; }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+    .shake { animation: shake .4s ease; }
+    @keyframes bounceIn { 0% { transform: scale(.3) rotate(-15deg); opacity: 0; } 60% { transform: scale(1.2) rotate(8deg); opacity: 1; } 100% { transform: none; } }
+    .bounce-in { animation: bounceIn .7s cubic-bezier(.22,1,.36,1) both; }
+
+    @keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(198,151,73,.7); } 100% { box-shadow: 0 0 0 28px rgba(198,151,73,0); } }
+    .poem-glow { animation: glow 1.4s ease-out 2; }
+    .hit-shake { animation: shake .4s ease; }
+
+    @keyframes floatHeart { 0%,100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-14px) rotate(6deg); } }
+    .float-heart { position: absolute; opacity: .3; animation: floatHeart 6s ease-in-out infinite; pointer-events: none; }
+    [data-step="0"] { position: relative; overflow-x: clip; }
+
+    button:not(:disabled) { transition-property: transform, background-color, border-color, box-shadow, opacity; transition-duration: .18s; }
+    button:not(:disabled):active { transform: scale(.97); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rise, .unwrap, .ch-r, .ch-l, .pop-in, .ready-pulse, .dot-here, .correct-pop, .shake, .bounce-in, .poem-glow, .hit-shake, .float-heart, .step.active.fwd, .step.active.back, .group:hover .wiggle { animation: none !important; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .step.active, .fade-in, .stamp-active, .line-in { animation: none; }
+      * { transition-duration: .01ms !important; }
+    }
+  </style>
+  <noscript><style>.step { display: block !important; margin-bottom: 4rem; }</style></noscript>
+</head>
+<body class="font-sans antialiased selection:bg-blush/40 selection:text-espresso">
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- HEADER: progress dots -->
+  <header class="sticky top-0 z-40 bg-cream/90 backdrop-blur-md border-b border-espresso/10">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5 shrink-0">
+        <span class="w-8 h-8 rounded-full bg-rosewood text-cream flex items-center justify-center font-serif font-bold" aria-hidden="true">A</span>
+        <span class="font-serif font-semibold leading-none hidden sm:inline">For Ammalu</span>
+      </div>
+      <nav id="dots" class="flex items-center gap-1.5 sm:gap-2" aria-label="Progress"></nav>
+      <span id="step-name" class="text-sm font-medium text-cocoa shrink-0 hidden sm:inline w-28 text-right"></span>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 pt-10">
+
+    <!-- 0 WELCOME -->
+    <section class="step" data-step="0">
+      <span class="float-heart text-3xl" style="top:6%;right:10%" aria-hidden="true">❤️</span>
+      <span class="float-heart text-2xl" style="bottom:12%;left:12%;animation-delay:-2s" aria-hidden="true">🌸</span>
+      <span class="float-heart text-2xl" style="top:48%;left:4%;animation-delay:-4s" aria-hidden="true">✨</span>
+      <div class="max-w-2xl mx-auto text-center space-y-6 py-12 sm:py-20" data-stagger>
+        <p class="step-label text-sm font-medium text-rosewood"></p>
+        <h1 tabindex="-1" class="font-serif text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08]">Happy Birthday, Ammalu</h1>
+        <p class="text-sm sm:text-base text-cocoa">Five small pages, one at a time.</p>
+        <div><button type="button" onclick="nextStep()" class="px-8 py-3.5 rounded-full bg-rosewood hover:bg-espresso text-cream font-semibold text-sm shadow-md transition-colors">Begin</button></div>
+      </div>
+    </section>
+
+    <!-- 1 GIFTS -->
+    <section class="step" data-step="1">
+      <div class="bg-[#F4ECE0] rounded-3xl p-6 sm:p-10 border-2 border-gold/40 shadow-paper">
+        <div class="space-y-2 max-w-2xl mb-6">
+          <p class="step-label text-sm font-medium text-rosewood"></p>
+          <h2 tabindex="-1" class="font-serif text-3xl sm:text-4xl font-bold">Four birthday vouchers</h2>
+          <p class="text-sm sm:text-base text-cocoa">Tap each sealed envelope to unwrap it. No expiry date, no fine print.</p>
+          <p class="text-sm font-bold">Unwrapped <span id="voucher-count" class="text-rosewood">0 / 4</span></p>
+        </div>
+        <div id="vouchers-grid" class="grid md:grid-cols-2 gap-5" data-stagger></div>
+      </div>
+    </section>
+
+    <!-- 2 DOSSIER -->
+    <section class="step" data-step="2">
+      <div class="max-w-2xl mb-8 space-y-2">
+        <p class="step-label text-sm font-medium text-rosewood"></p>
+        <h2 tabindex="-1" class="font-serif text-3xl sm:text-4xl font-bold">The official Ammalu dossier</h2>
+        <p class="text-sm sm:text-base text-cocoa">How she makes decisions, in her own order. Then flip all four lexicon cards.</p>
+      </div>
+
+      <div class="bg-white/95 rounded-3xl p-6 sm:p-8 border border-espresso/10 shadow-polaroid mb-10">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <h3 class="font-serif text-xl sm:text-2xl font-semibold">Brain <span class="text-gold">&gt;</span> Gut <span class="text-gold">&gt;</span> Heart</h3>
+          <button type="button" onclick="animateBars()" class="text-xs font-semibold px-4 py-2.5 rounded-full bg-parchment hover:bg-blush/30 transition-colors">Re-run audit</button>
+        </div>
+        <div class="grid md:grid-cols-3 gap-5" data-stagger>
+          <div class="rounded-2xl bg-cream p-5 border-2 border-gold/50 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3"><span class="px-2.5 py-0.5 rounded-full bg-gold text-espresso text-xs font-bold">#1 The boss</span><span class="text-2xl" aria-hidden="true">🧠</span></div>
+              <h4 class="font-serif text-xl font-bold mb-2">Brain <span class="count" data-to="98">98</span>%</h4>
+              <p class="text-sm text-cocoa leading-relaxed">Logic goes first. She weighs it up, analyses it, and keeps just enough of a sharp edge to protect her peace.</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-espresso/10"><div class="w-full bg-parchment h-2.5 rounded-full overflow-hidden"><div class="bar bg-gold h-full rounded-full" data-w="98" style="width:98%;transition:width 1.1s ease"></div></div></div>
+          </div>
+          <div class="rounded-2xl bg-cream p-5 border border-sage/40 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3"><span class="px-2.5 py-0.5 rounded-full bg-sage text-espresso text-xs font-bold">#2 Street smarts</span><span class="text-2xl" aria-hidden="true">🧭</span></div>
+              <h4 class="font-serif text-xl font-bold mb-2">Gut <span class="count" data-to="85">85</span>%</h4>
+              <p class="text-sm text-cocoa leading-relaxed">A razor-sharp radar for sketchy energy, perfect timing on tactical retreats, and a protective mean streak whenever her peace needs guarding.</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-espresso/10"><div class="w-full bg-parchment h-2.5 rounded-full overflow-hidden"><div class="bar bg-sage h-full rounded-full" data-w="85" style="width:85%;transition:width 1.1s ease .15s"></div></div></div>
+          </div>
+          <div class="rounded-2xl bg-cream p-5 border border-rosewood/35 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3"><span class="px-2.5 py-0.5 rounded-full bg-rosewood text-cream text-xs font-bold">#3 The softie</span><span class="text-2xl" aria-hidden="true">❤️</span></div>
+              <h4 class="font-serif text-xl font-bold mb-2">Heart <span class="count" data-to="42">42</span>%</h4>
+              <p class="text-sm text-cocoa leading-relaxed">Last in her ranking, but it still sneaks a vote: too empathetic for clinical psychology, melts over sleepy forehead kisses, and gets sudden “cuteness aggression” (the urge to bite whatever is cute 🤗).</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-espresso/10"><div class="w-full bg-parchment h-2.5 rounded-full overflow-hidden"><div class="bar bg-rosewood h-full rounded-full" data-w="42" style="width:42%;transition:width 1.1s ease .3s"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <h3 class="font-serif text-2xl font-bold">The Ammalu lexicon <span class="text-sm font-sans font-normal text-cocoa">(tap each card to flip it)</span></h3>
+        <div id="lexicon-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5" data-stagger></div>
+      </div>
+    </section>
+
+    <!-- 3 PASSPORT -->
+    <section class="step" data-step="3">
+      <div class="bg-[#F4ECE0] rounded-3xl p-6 sm:p-10 border-2 border-espresso/15 shadow-paper">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+          <div class="max-w-2xl space-y-2">
+            <p class="step-label text-sm font-medium text-rosewood"></p>
+            <h2 tabindex="-1" class="font-serif text-3xl sm:text-4xl font-bold">Our Bangalore food &amp; adventure passport</h2>
+            <p class="text-sm sm:text-base text-cocoa">Stamp the missions you're most excited about, and star the ones for our first weekend. Pick at least one.</p>
+          </div>
+          <div class="w-full md:w-60 shrink-0">
+            <div class="flex items-center justify-between text-sm font-bold mb-1.5"><span>Stamps</span><span id="passport-count" class="text-rosewood">0 / 7</span></div>
+            <div class="w-full bg-white/80 h-3 rounded-full overflow-hidden border border-espresso/10"><div id="passport-progress-bar" class="bg-sage h-full transition-all duration-500" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div id="passport-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4" data-stagger></div>
+      </div>
+    </section>
+
+    <!-- 4 POEM GAME -->
+    <section class="step" data-step="4">
+      <div class="on-dark bg-espresso rounded-3xl p-6 sm:p-10 shadow-paper text-cream overflow-hidden">
+        <div class="text-center max-w-xl mx-auto mb-8 space-y-2">
+          <p class="step-label text-sm font-medium text-gold"></p>
+          <h2 tabindex="-1" class="font-serif text-3xl sm:text-4xl font-bold">Catch the hearts, unlock a poem</h2>
+          <p class="text-sm sm:text-base text-cream/80">Every heart, cake, iced tea and teddy you catch reveals one line. Dodge the Monday alarms. Your progress is saved, so you can't get stuck.</p>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-8 items-start">
+          <div class="max-w-[420px] w-full mx-auto">
+            <div class="flex items-center justify-between mb-2 text-sm font-semibold">
+              <span>Lines unlocked <span id="game-count" class="text-gold">0 / 0</span></span>
+              <span id="game-lives" class="tracking-widest" aria-label="Lives"></span>
+            </div>
+            <div class="relative rounded-2xl overflow-hidden border-2 border-gold/50 bg-cream">
+              <canvas id="game-canvas" class="block w-full" style="aspect-ratio:3/4" aria-label="Catch the hearts game"></canvas>
+              <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-espresso/80 backdrop-blur-sm text-cream">
+                <div id="overlay-emoji" class="text-5xl mb-2" aria-hidden="true">🧺</div>
+                <h3 id="overlay-title" class="font-serif text-2xl font-bold mb-1">Ready?</h3>
+                <p id="overlay-text" class="text-sm text-cream/80 mb-4 max-w-[260px]">Drag your finger to move the basket.</p>
+                <button id="overlay-btn" type="button" class="px-6 py-2.5 rounded-full bg-gold hover:bg-terracotta text-espresso hover:text-cream font-semibold text-sm transition-colors">Start</button>
+              </div>
+            </div>
+            <p class="text-xs text-cream/70 text-center mt-2">Drag on the game to move the basket<span class="kbd-hint">, or use ← → / A D</span></p>
+          </div>
+          <div class="relative">
+            <div class="tape-strip tape-gold"></div>
+            <div id="poem-card" class="bg-[#FFFDF9] text-espresso rounded-3xl p-6 sm:p-8 border border-gold/40 min-h-[320px]">
+              <div class="flex items-center justify-between mb-4 pb-3 border-b border-dashed border-espresso/15">
+                <span class="font-hand text-2xl text-rosewood font-semibold">For Ammalu</span>
+                <span id="poem-lock" class="text-xs px-2.5 py-1 rounded-full bg-cream text-cocoa font-medium">Locked</span>
+              </div>
+              <div id="poem-lines" class="font-serif text-[16px] sm:text-[17px] leading-[1.9] italic" aria-live="polite"></div>
+              <div id="poem-sign" class="hidden mt-5 pt-4 border-t border-espresso/10 font-hand text-2xl text-cocoa fade-in"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- STEP BAR -->
+  <div id="step-bar" class="fixed bottom-0 inset-x-0 z-40 bg-cream/95 backdrop-blur-md border-t border-espresso/10">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      <button id="back-btn" type="button" onclick="prevStep()" class="text-sm font-semibold px-4 py-2.5 rounded-full bg-parchment hover:bg-blush/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Back</button>
+      <p id="gate-hint" class="text-xs sm:text-sm leading-snug text-cocoa text-center flex-1" role="status" aria-live="polite"></p>
+      <button id="next-btn" type="button" onclick="nextStep()" class="text-sm font-semibold px-5 py-2.5 rounded-full bg-rosewood hover:bg-espresso text-cream transition-colors">Next</button>
+    </div>
+  </div>
+
+  <script>
+    /* ===================================================================
+       ✏️  EDIT ME: your poem lives here.
+       Each inner array is a stanza; each string is one line.
+       One line unlocks per catch, so the game length matches the poem.
+       (The text below is a PLACEHOLDER DRAFT. Replace it with your own.)
+       =================================================================== */
+    const POEM_SIGNATURE = '— Kavish';
+    const POEM = [
+      [
+        'You feel everything, and you still look after your peace.',
+        'You think first, then trust your gut, then your heart gets a say.',
+      ],
+      [
+        'Happy birthday to the girl who feels it all,',
+        'who guards her peace like a fortress wall.',
+        'Brain out in front, Gut by her side,',
+        'and a Heart she thinks she’s learned to hide.',
+      ],
+      [
+        'A box of milk pedas, a blanket, a show,',
+        'she knows exactly how to recharge and glow.',
+        'A kurti for three good photos, then cozy again,',
+        'she does it her way, and that is the plan.',
+      ],
+      [
+        'So here’s to the year that’s wide open and new.',
+        'Happy birthday, Ammalu. This one’s for you.',
+      ],
+    ];
+    /* =================================================================== */
+
+    /* ---------- helpers ---------- */
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const store = {
+      get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+      set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+      del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+    };
+    const KEYS = ['ammalu_vouchers', 'ammalu_flipped', 'ammalu_passport_v3', 'ammalu_poem_unlocked', 'ammalu_step'];
+    const FLAGS = location.search + location.hash;
+    if (/[?&#]reset/.test(FLAGS)) KEYS.forEach((k) => store.del(k));          // clears saved progress (for your testing)
+    const PREVIEW = /[?&#]preview/.test(FLAGS);                                // opens every step (for your testing)
+
+    /* replace a container's HTML but keep keyboard focus on the same control */
+    function setHTML(el, html) {
+      const a = document.activeElement;
+      const key = a && el.contains(a) ? a.dataset.key : null;
+      el.innerHTML = html;
+      if (key) { const n = el.querySelector('[data-key="' + key + '"]'); if (n) n.focus({ preventScroll: true }); }
+    }
+
+    /* ---------- confetti ---------- */
+    const confettiCanvas = $('#confetti-canvas');
+    const cctx = confettiCanvas.getContext('2d');
+    let particles = [], confettiRaf = null;
+    function sizeConfetti() { confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
+    addEventListener('resize', sizeConfetti); sizeConfetti();
+    function confetti(count = 40) {
+      if (reduceMotion) return;
+      const palette = ['#8E3B46', '#C85A53', '#C69749', '#6B8E78', '#E8A598'];
+      const symbols = ['🎂', '✨', '❤️', '🧸', '🌸'];
+      for (let i = 0; i < count; i++) {
+        const emoji = i % 4 === 0;
+        particles.push({
+          x: Math.random() * confettiCanvas.width, y: confettiCanvas.height + 10 + Math.random() * 60,
+          vx: (Math.random() - .5) * 5, vy: -(Math.random() * 7 + 5.5),
+          size: emoji ? Math.random() * 10 + 16 : Math.random() * 6 + 6, emoji,
+          symbol: symbols[Math.floor(Math.random() * symbols.length)], color: palette[Math.floor(Math.random() * palette.length)],
+          alpha: 1, rot: Math.random() * 6.28, vrot: (Math.random() - .5) * .14,
+        });
+      }
+      if (!confettiRaf) confettiRaf = requestAnimationFrame(stepConfetti);
+    }
+    function stepConfetti() {
+      cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      particles.forEach((p) => {
+        p.x += p.vx; p.y += p.vy; p.vy += .08; p.alpha -= .007; p.rot += p.vrot;
+        cctx.save(); cctx.globalAlpha = Math.max(0, p.alpha); cctx.translate(p.x, p.y); cctx.rotate(p.rot);
+        if (p.emoji) { cctx.font = p.size + 'px serif'; cctx.fillText(p.symbol, 0, 0); }
+        else { cctx.fillStyle = p.color; cctx.fillRect(-p.size / 2, -p.size / 3, p.size, p.size * .65); }
+        cctx.restore();
+      });
+      particles = particles.filter((p) => p.alpha > 0 && p.y < confettiCanvas.height + 120);
+      confettiRaf = particles.length ? requestAnimationFrame(stepConfetti) : null;
+      if (!particles.length) cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }
+
+
+    /* ---------- motion helpers ---------- */
+    function restartAnim(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+    function staggerIn(root) {
+      if (reduceMotion) return;
+      $$('[data-stagger]', root).forEach((c) => [...c.children].forEach((el, i) => { el.style.setProperty('--i', i); restartAnim(el, 'rise'); }));
+    }
+    function riseEach(container) {
+      if (reduceMotion) return;
+      [...container.children].forEach((el, i) => { el.style.setProperty('--i', i); el.classList.add('rise'); });
+    }
+    function countUp() {
+      $$('.count').forEach((el) => {
+        const to = Number(el.dataset.to);
+        if (reduceMotion) { el.textContent = to; return; }
+        const t0 = performance.now(), dur = 1000;
+        const tick = (t) => { const k = Math.min(1, (t - t0) / dur); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(tick); };
+        el.textContent = 0; requestAnimationFrame(tick);
+      });
+    }
+
+    /* ===================================================================
+       STEP ENGINE
+       =================================================================== */
+    const STEPS = ['Welcome', 'Gifts', 'Dossier', 'Bucket list', 'Poem'];
+    const LAST = STEPS.length - 1;
+    const poem = { revealed: 0, total: 0 };      // filled in by the game
+    let cur = 0, prevStepIdx = null;
+    const gateState = {};
+
+    /* saved progress */
+    let opened = store.get('ammalu_vouchers', {});
+    const flipped = new Set(store.get('ammalu_flipped', []));
+    let passport = store.get('ammalu_passport_v3', {});
+    const VOUCHER_TOTAL = 4, LEX_TOTAL = 4;
+
+    function openedCount() { return vouchers.filter((v) => opened[v.id]).length; }
+    function isDone(i) {
+      if (PREVIEW) return true;
+      switch (i) {
+        case 0: return true;
+        case 1: return openedCount() >= VOUCHER_TOTAL;
+        case 2: return flipped.size >= LEX_TOTAL;
+        case 3: return Object.values(passport).some((s) => s && (s.stamped || s.priority));
+        case 4: return poem.total > 0 && poem.revealed >= poem.total;
+      }
+      return false;
+    }
+    function maxOpen() { for (let i = 0; i <= LAST; i++) if (!isDone(i)) return i; return LAST; }
+
+    function hintFor(i) {
+      const left = (n, total) => ' (' + (total - n) + ' left)';
+      switch (i) {
+        case 0: return 'Ready when you are.';
+        case 1: return isDone(1) ? 'All gifts unwrapped. On to the next page.' : 'Unwrap all 4 gifts to continue' + left(openedCount(), VOUCHER_TOTAL);
+        case 2: return isDone(2) ? 'All cards flipped. On to the next page.' : 'Flip all 4 lexicon cards to continue' + left(flipped.size, LEX_TOTAL);
+        case 3: return isDone(3) ? 'Passport started. On to the next page.' : 'Stamp or star at least one mission to continue.';
+        case 4: return isDone(4) ? 'That’s everything. Happy birthday, Ammalu.' : 'Unlock the whole poem to finish' + left(poem.revealed, poem.total) + '.';
+      }
+      return '';
+    }
+
+    function refreshGate() {
+      const done = isDone(cur), allowed = maxOpen();
+      $('#dots').innerHTML = STEPS.map((name, i) => {
+        const locked = i > allowed, here = i === cur, fin = isDone(i) && i < allowed + (isDone(allowed) ? 1 : 0);
+        const cls = here ? 'bg-rosewood scale-125' : locked ? 'bg-espresso/15 cursor-not-allowed' : fin ? 'bg-blush hover:bg-rosewood/60' : 'bg-gold';
+        return `<button type="button" ${locked ? 'disabled' : ''} onclick="goStep(${i})" aria-label="Step ${i + 1}: ${name}${here ? ' (current)' : locked ? ' (locked)' : ''}" aria-current="${here ? 'step' : 'false'}"
+          class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full transition-all ${cls}${here ? ' dot-here' : ''}" data-key="dot-${i}"></button>`;
+      }).join('');
+      $('#step-name').textContent = STEPS[cur];
+      $('#back-btn').disabled = cur === 0;
+      const nb = $('#next-btn');
+      nb.textContent = cur === 0 ? 'Begin' : 'Next';
+      nb.disabled = !done;
+      const wasDone = gateState[cur]; gateState[cur] = done;
+      if (done && wasDone === false && !reduceMotion && cur !== LAST) restartAnim(nb, 'ready-pulse');
+      nb.classList.toggle('hidden', cur === LAST);
+      const hint = $('#gate-hint');
+      hint.textContent = hintFor(cur);
+      hint.classList.toggle('text-sage', done && cur !== 0);
+      hint.classList.toggle('font-semibold', done && cur !== 0);
+    }
+
+    function goStep(i) {
+      if (i < 0 || i > LAST || i > maxOpen()) return;
+      cur = i; store.set('ammalu_step', cur);
+      const dirCls = prevStepIdx === null || prevStepIdx === cur ? '' : cur > prevStepIdx ? 'fwd' : 'back';
+      $$('.step').forEach((s) => { const on = Number(s.dataset.step) === cur; s.classList.remove('fwd', 'back'); s.classList.toggle('active', on); if (on && dirCls) s.classList.add(dirCls); });
+      prevStepIdx = cur;
+      $$('.step-label').forEach((l) => { const n = Number(l.closest('.step').dataset.step); l.textContent = 'Step ' + (n + 1) + ' of ' + STEPS.length + ': ' + STEPS[n]; });
+      window.scrollTo(0, 0);
+      const h = $('.step.active [tabindex="-1"]'); if (h) h.focus({ preventScroll: true });
+      staggerIn($('.step.active'));
+      if (cur === 3) animateBars();
+      refreshGate();
+    }
+    function nextStep() { if (isDone(cur) && cur < LAST) goStep(cur + 1); }
+    function prevStep() { goStep(cur - 1); }
+
+    /* ---------- 1. vouchers ---------- */
+    const vouchers = [
+      { id: 'blanket', code: 'NOV25-BLANKET-100', title: 'The Royal Soft Blanket Upgrade', tag: 'Coupon 1: Cozy sovereignty', emoji: '🧸', desc: 'A super soft blanket and 100% blanket custody. No 1/3rd limits, ever.' },
+      { id: 'dessert', code: 'NOV25-MILK-PEDA', title: 'A Box of Milk Pedas', tag: 'Coupon 2: Sweet-tooth immunity', emoji: '🍬', desc: 'A box of simple, creamy milk pedas, your childhood favourite. Nothing too sugary, nothing oily.' },
+      { id: 'bite', code: 'NOV25-ONE-BITE', title: 'The Cuteness Aggression Licence', tag: 'Coupon 3: Fully licensed', emoji: '🤗', desc: 'One consequence-free bite, valid whenever the cuteness aggression strikes. No questions asked.' },
+      { id: 'halwa', code: 'NOV25-HALWA-RUN', title: 'The Carrot Halwa Run', tag: 'Coupon 4: Sweet-tooth quest', emoji: '🥕', desc: 'A trip to find the creamiest carrot halwa in Bangalore. You have the final say on the winner.' },
+    ];
+    function voucherCard(v, fresh) {
+      if (!opened[v.id]) {
+        return `<button type="button" data-key="v-${v.id}" onclick="unwrapVoucher('${v.id}')" class="group text-left rounded-3xl p-6 bg-[#FFFDF9] border-2 border-dashed border-gold/60 hover:border-rosewood hover:-translate-y-0.5 shadow-polaroid transition-all flex flex-col justify-between min-h-[190px]">
+          <div class="flex items-center justify-between gap-2"><span class="text-xs font-semibold text-cocoa">${v.tag}</span><span class="px-2.5 py-0.5 rounded-full bg-gold/20 text-xs font-bold">Sealed</span></div>
+          <div class="my-4 flex items-center gap-4"><div class="wiggle w-12 h-12 rounded-2xl bg-blush/30 border border-rosewood/25 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform" aria-hidden="true">🎀</div>
+            <h3 class="font-serif text-xl font-bold group-hover:text-rosewood transition-colors">Tap to unwrap</h3></div>
+          <div class="pt-3 border-t border-espresso/10 text-xs font-semibold text-rosewood">Break the wax seal</div></button>`;
+      }
+      return `<div data-key="v-${v.id}" tabindex="-1" class="${fresh ? 'unwrap ' : ''}relative rounded-3xl p-6 bg-white border-2 border-gold shadow-paper flex flex-col justify-between min-h-[190px]">
+        <div class="flex items-start justify-between gap-2"><div><span class="text-xs font-semibold text-rosewood block mb-1">${v.tag}</span>
+          <h3 class="font-serif text-xl sm:text-2xl font-bold leading-snug">${v.title}</h3></div><span class="text-3xl shrink-0" aria-hidden="true">${v.emoji}</span></div>
+        <p class="text-sm text-cocoa my-3 leading-relaxed">${v.desc}</p>
+        <div class="pt-3 border-t border-dashed border-espresso/15 flex items-center justify-between gap-2">
+          <span class="text-[11px] font-mono px-2.5 py-1 rounded-md bg-cream border border-espresso/10">${v.code}</span>
+          <span class="${fresh ? 'stamp-active ' : ''}px-2.5 py-0.5 rounded-md border-2 border-rosewood text-rosewood font-serif font-bold text-xs">Redeemable</span></div></div>`;
+    }
+    function renderVouchers(freshId) {
+      setHTML($('#vouchers-grid'), vouchers.map((v) => voucherCard(v, v.id === freshId)).join(''));
+      $('#voucher-count').textContent = openedCount() + ' / ' + VOUCHER_TOTAL;
+    }
+    function unwrapVoucher(id) { opened[id] = true; store.set('ammalu_vouchers', opened); confetti(26); renderVouchers(id); refreshGate(); }
+    renderVouchers();
+
+    /* ---------- 3. dossier ---------- */
+    function animateBars() {
+      countUp();
+      const bars = $$('.bar');
+      bars.forEach((b) => { b.style.transition = 'none'; b.style.width = '4%'; });
+      requestAnimationFrame(() => requestAnimationFrame(() => bars.forEach((b) => { b.style.transition = ''; b.style.width = b.dataset.w + '%'; })));
+    }
+    const lexicon = [
+      { term: 'Snerdling', pron: '/ˈsnɜːdlɪŋ/ • verb', emoji: '🛌', hint: 'Her ultimate weekend art', back: 'The art of nestling under a soft blanket for the foreseeable future, ideally with 48-hour recovery naps and Modern Family rewatches.' },
+      { term: 'Fake Goodnights', pron: '/feɪk ˈɡʊdnaɪts/ • noun', emoji: '📱', hint: 'Happens nightly past midnight', back: 'When Ammalu sincerely says “goodnight, going to sleep” and then sends Instagram reels an hour later.' },
+      { term: 'Eldest Daughter Immunity', pron: '/ˈɛldɪst ˈdɔːtər/ • law', emoji: '👑', hint: 'Undisputed authority', back: 'Constitutional clause: eldest daughters are always right.' },
+      { term: 'Hangry & Grumpy Rules', pron: '/ˈhæŋɡri/ • alert', emoji: '⏳', hint: 'Two triggers, zero patience', back: 'Extreme hunger erases all taste standards. Lack of sleep makes her brain foggy and grumpy.' },
+    ];
+    function flipCard(i, btn) {
+      const inner = $('.flip-inner', btn);
+      const on = inner.classList.toggle('rotate-y-180');
+      btn.setAttribute('aria-pressed', String(on));
+      if (!flipped.has(i)) { flipped.add(i); store.set('ammalu_flipped', [...flipped]); refreshGate(); }
+    }
+    $('#lexicon-grid').innerHTML = lexicon.map((it, i) => `
+      <button type="button" onclick="flipCard(${i}, this)" aria-pressed="false" class="perspective-1000 h-56 text-left group" aria-label="${it.term}. Tap to flip the card.">
+        <div class="flip-inner relative w-full h-full transition-transform duration-500 transform-style-3d">
+          <div class="backface-hidden absolute inset-0 bg-white/95 rounded-3xl p-5 border border-espresso/10 shadow-polaroid flex flex-col justify-between">
+            <div class="flex items-start justify-between"><span class="text-xs font-mono text-cocoa">${it.pron}</span><span class="text-2xl" aria-hidden="true">${it.emoji}</span></div>
+            <div><h4 class="font-serif text-xl font-bold group-hover:text-rosewood transition-colors">${it.term}</h4><p class="text-xs text-cocoa mt-1">${it.hint}</p></div>
+            <span class="text-xs font-semibold text-rosewood">Tap to flip</span>
+          </div>
+          <div class="backface-hidden rotate-y-180 absolute inset-0 bg-espresso text-cream rounded-3xl p-5 shadow-paper flex flex-col justify-between">
+            <span class="font-serif font-bold text-blush border-b border-cream/15 pb-2">${it.term}</span>
+            <p class="text-xs sm:text-[13px] leading-relaxed text-cream/90">${it.back}</p>
+            <span class="text-xs text-cream/70 text-right">Tap to flip back</span>
+          </div>
+        </div></button>`).join('');
+
+    /* ---------- 4. passport ---------- */
+    const missions = [
+      { id: 'cubbon', title: 'Picnic at Cubbon Park', desc: 'A relaxed picnic in the park. Bring the blanket (all 100% of it is hers).', emoji: '🌳' },
+      { id: 'maharashtrian', title: 'Maharashtrian Food Tour', desc: 'Misal pav, puran poli and vada pav, in exchange for Sadya and Kerala favourites.', emoji: '🥘' },
+      { id: 'salsa', title: 'Salsa Lessons Together', desc: 'Learning to dance side by side. No experience needed, two left feet welcome.', emoji: '💃' },
+      { id: 'geoguessr', title: 'GeoGuessr Night Rematch', desc: 'Settling who has the sharper map instincts. No “Northie” UP-document teasing allowed.', emoji: '🌍' },
+      { id: 'mutton', title: 'Cooking Mutton Together', desc: 'Kitchen teamwork, testing that slow-cooked mutton recipe from scratch.', emoji: '🍲' },
+      { id: 'tap_beer', title: 'Tap Beer Tasting Flight', desc: 'Craft tap beers at a Bangalore brewery, “like tasting ice cream flavours.”', emoji: '🍺' },
+      { id: 'baby_guinness', title: 'Baby Guinness Night', desc: 'Crossing our promised Baby Guinness shots off the list, together.', emoji: '🥃' },
+    ];
+    function savePassport() { store.set('ammalu_passport_v3', passport); }
+    function toggleStamp(id) { passport[id] = passport[id] || {}; passport[id].stamped = !passport[id].stamped; savePassport(); if (passport[id].stamped) confetti(18); renderPassport(passport[id].stamped ? id : null); refreshGate(); }
+    function togglePriority(id) { passport[id] = passport[id] || {}; passport[id].priority = !passport[id].priority; savePassport(); renderPassport(null); refreshGate(); }
+    function renderPassport(freshId) {
+      let n = 0;
+      setHTML($('#passport-list'), missions.map((m, idx) => {
+        const s = passport[m.id] || {};
+        if (s.stamped) n++;
+        return `<div class="relative rounded-2xl p-4 sm:p-5 bg-white/95 border ${s.stamped ? 'border-sage ring-2 ring-sage/20' : s.priority ? 'border-rosewood ring-2 ring-rosewood/15' : 'border-espresso/10'} shadow-sm transition-all flex flex-col justify-between gap-3">
+          <button type="button" data-key="p-${m.id}" aria-pressed="${!!s.stamped}" onclick="toggleStamp('${m.id}')" class="text-left flex items-start gap-3 rounded-lg">
+            <span class="text-2xl mt-0.5" aria-hidden="true">${m.emoji}</span>
+            <span class="block">
+              <span class="block font-serif font-bold text-base sm:text-lg ${s.stamped ? 'line-through decoration-sage decoration-2 opacity-75' : ''}"><span class="text-rosewood mr-1">${idx + 1}.</span>${m.title}</span>
+              <span class="block text-xs sm:text-sm text-cocoa mt-1 leading-relaxed">${m.desc}</span>
+            </span>
+          </button>
+          <div class="flex items-center justify-between pt-2 border-t border-espresso/5">
+            <button type="button" data-key="pp-${m.id}" aria-pressed="${!!s.priority}" onclick="togglePriority('${m.id}')" class="text-xs font-semibold px-3 py-2 rounded-full transition-colors ${s.priority ? 'bg-rosewood text-cream' : 'bg-parchment text-cocoa hover:bg-blush/30'}">${s.priority ? '★ First weekend' : '☆ First weekend?'}</button>
+            <span class="text-xs font-bold ${s.stamped ? 'text-sage' : 'text-cocoa'}" style="${s.stamped ? 'color:#4F7059' : ''}">${s.stamped ? 'Stamped' : 'Tap above to stamp'}</span></div>
+          ${s.stamped ? `<div class="${m.id === freshId ? 'stamp-active ' : ''}absolute top-3 right-3 px-2 py-0.5 rounded-md border-2 border-sage font-serif font-bold text-[11px] bg-white/90 pointer-events-none" style="transform:rotate(-8deg);color:#4F7059">Done</div>` : ''}
+        </div>`;
+      }).join(''));
+      $('#passport-count').textContent = n + ' / ' + missions.length;
+      $('#passport-progress-bar').style.width = Math.round((n / missions.length) * 100) + '%';
+    }
+    renderPassport(null);
+
+    /* ===================================================================
+       7. ARCADE: catch the hearts, unlock the poem
+       =================================================================== */
+    (function initGame() {
+      const poemLines = POEM.flatMap((st, si) => st.map((text) => ({ text, stanza: si })));
+      const TOTAL = poemLines.length;
+      const KEY = 'ammalu_poem_unlocked';
+      let revealed = Math.min(TOTAL, store.get(KEY, 0));
+      if (/[?&#]unlock/.test(FLAGS)) revealed = TOTAL;                         // preview shortcut for you
+      poem.total = TOTAL; poem.revealed = revealed;
+
+      const canvas = $('#game-canvas'), ctx = canvas.getContext('2d');
+      const W = 360, H = 480, dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = W * dpr; canvas.height = H * dpr;
+
+      const overlay = $('#game-overlay'), oBtn = $('#overlay-btn');
+      const GOOD = ['💗', '🍰', '🧋', '🧸', '🌸'], BAD = '⏰';
+      const player = { x: W / 2, target: W / 2, squish: 0 };
+      const BY = H - 48;
+      let state = 'idle', items = [], floaters = [], bursts = [], lives = 3, spawnT = 0, last = 0, raf = 0, visible = false;
+
+      function renderPoem(flashIdx) {
+        let html = '', prevStanza = -1;
+        poemLines.forEach((l, i) => {
+          const gap = l.stanza !== prevStanza && i > 0 ? 'mt-5' : '';
+          prevStanza = l.stanza;
+          if (i < revealed) html += `<p class="${gap} ${i === flashIdx ? 'line-in' : ''}">${l.text}</p>`;
+          else html += `<div class="${gap} flex items-center h-[1.9em]" aria-hidden="true"><div class="skeleton" style="width:${58 + ((i * 17) % 38)}%"></div></div>`;
+        });
+        $('#poem-lines').innerHTML = html;
+        const done = revealed >= TOTAL;
+        $('#poem-lock').textContent = done ? 'Unlocked 💌' : 'Locked: ' + revealed + ' / ' + TOTAL;
+        const sign = $('#poem-sign'); sign.textContent = POEM_SIGNATURE; sign.classList.toggle('hidden', !done);
+        $('#game-count').textContent = revealed + ' / ' + TOTAL;
+        poem.revealed = revealed;
+      }
+      function renderLives() { $('#game-lives').textContent = '❤'.repeat(lives) + '♡'.repeat(3 - lives); $('#game-lives').style.color = '#E8A598'; }
+
+      function showOverlay(emoji, title, text, btn) {
+        $('#overlay-emoji').textContent = emoji; $('#overlay-title').textContent = title; $('#overlay-text').textContent = text; oBtn.textContent = btn;
+        overlay.classList.remove('hidden'); overlay.classList.add('flex');
+      }
+      function hideOverlay() { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
+      function idleOverlay() {
+        if (revealed >= TOTAL) showOverlay('💌', 'Poem unlocked', 'You already have it. Play again just for fun?', 'Play for fun');
+        else if (revealed > 0) showOverlay('🧺', 'Welcome back', revealed + ' of ' + TOTAL + ' lines unlocked. Keep going!', 'Continue');
+        else showOverlay('🧺', 'Ready?', 'Drag (or use ← → keys) to move the basket and catch the good stuff.', 'Start');
+      }
+
+      function start() {
+        items = []; floaters = []; bursts = []; lives = 3; spawnT = 0.4; last = 0; player.x = player.target = W / 2;
+        renderLives(); hideOverlay(); state = 'playing'; schedule();
+      }
+      function schedule() { cancelAnimationFrame(raf); if (state === 'playing' && visible && !document.hidden) { last = 0; raf = requestAnimationFrame(frame); } }
+      function spawn() {
+        const bad = Math.random() < 0.2, prog = revealed / TOTAL;
+        items.push({ x: 24 + Math.random() * (W - 48), y: -24, vy: 115 + prog * 55 + Math.random() * 25, bad, e: bad ? BAD : GOOD[Math.floor(Math.random() * GOOD.length)], rot: (Math.random() - .5) * .6, spin: (Math.random() - .5) * 1.2 });
+      }
+      function catchGood(it) {
+        floaters.push({ x: it.x, y: BY - 20, t: 0, text: '+1' });
+        player.squish = 0.22;
+        const cols = ['#8E3B46', '#C85A53', '#C69749', '#E8A598'];
+        for (let k = 0; k < 9; k++) { const a = Math.PI + Math.random() * Math.PI; bursts.push({ x: it.x, y: BY - 18, vx: Math.cos(a) * (60 + Math.random() * 110), vy: Math.sin(a) * (80 + Math.random() * 140), t: 0, c: cols[k % 4], s: 5 + Math.random() * 4 }); }
+        if (revealed < TOTAL) {
+          revealed++; store.set(KEY, revealed); renderPoem(revealed - 1);
+          if (revealed >= TOTAL) win();
+        }
+      }
+      function hitShake() { const w = canvas.parentElement; if (reduceMotion) return; restartAnim(w, 'hit-shake'); }
+      function win() {
+        $('#poem-card').classList.add('poem-glow');
+        state = 'won'; cancelAnimationFrame(raf); draw(); refreshGate(); confetti(90);
+        setTimeout(() => { showOverlay('💌', 'Poem unlocked!', 'Every line is yours. Happy birthday, Ammalu.', 'Play for fun'); $('#poem-card').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' }); }, 700);
+      }
+      function lose() {
+        state = 'over'; cancelAnimationFrame(raf); draw();
+        showOverlay('⏰', 'Monday alarm got you', 'Your unlocked lines are saved. Try again?', 'Try again');
+      }
+      function frame(t) {
+        if (state !== 'playing') return;
+        const dt = last ? Math.min(0.04, (t - last) / 1000) : 0.016; last = t;
+        player.x += (player.target - player.x) * Math.min(1, dt * 16);
+        spawnT -= dt;
+        if (spawnT <= 0) { spawn(); spawnT = 0.85 - (revealed / TOTAL) * 0.2 + Math.random() * 0.25; }
+        for (const it of items) {
+          it.y += it.vy * dt; it.rot += it.spin * dt;
+          if (!it.done && it.y > BY - 22 && it.y < BY + 16 && Math.abs(it.x - player.x) < 40) {
+            it.done = true;
+            if (it.bad) { lives--; hitShake(); floaters.push({ x: it.x, y: BY - 20, t: 0, text: '−1 ♥' }); renderLives(); if (lives <= 0) { lose(); return; } }
+            else catchGood(it);
+            if (state !== 'playing') return;
+          }
+        }
+        items = items.filter((it) => !it.done && it.y < H + 30);
+        floaters.forEach((f) => (f.t += dt)); floaters = floaters.filter((f) => f.t < 0.8);
+        bursts.forEach((b) => { b.t += dt; b.x += b.vx * dt; b.y += b.vy * dt; b.vy += 520 * dt; }); bursts = bursts.filter((b) => b.t < 0.7);
+        if (player.squish > 0) player.squish = Math.max(0, player.squish - dt);
+        draw();
+        raf = requestAnimationFrame(frame);
+      }
+      function draw() {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#FBF7F2'); g.addColorStop(1, '#F3E3D6');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(198,151,73,.18)';
+        for (let y = 20; y < H; y += 40) for (let x = 20; x < W; x += 40) { ctx.beginPath(); ctx.arc(x, y, 1.4, 0, 6.28); ctx.fill(); }
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        for (const it of items) { ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.rot); ctx.font = '30px serif'; ctx.fillText(it.e, 0, 0); ctx.restore(); }
+        for (const b of bursts) { ctx.globalAlpha = Math.max(0, 1 - b.t / 0.7); ctx.fillStyle = b.c; ctx.beginPath(); ctx.arc(b.x, b.y, b.s * (1 - b.t / 1.4), 0, 6.28); ctx.fill(); ctx.globalAlpha = 1; }
+        const sq = Math.sin((player.squish / 0.22) * Math.PI) * 0.18;
+        ctx.save(); ctx.translate(player.x, BY + 14); ctx.scale(1 + sq, 1 - sq); ctx.font = '46px serif'; ctx.fillText('🧺', 0, -14); ctx.restore();
+        for (const f of floaters) { ctx.globalAlpha = 1 - f.t / 0.8; ctx.font = 'bold 16px sans-serif'; ctx.fillStyle = f.text.startsWith('−') ? '#C85A53' : '#8E3B46'; ctx.fillText(f.text, f.x, f.y - f.t * 50); ctx.globalAlpha = 1; }
+      }
+
+      function setTargetFromPointer(e) { const r = canvas.getBoundingClientRect(); player.target = Math.max(28, Math.min(W - 28, ((e.clientX - r.left) / r.width) * W)); }
+      canvas.addEventListener('pointermove', setTargetFromPointer);
+      canvas.addEventListener('pointerdown', (e) => { setTargetFromPointer(e); canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId); });
+      const keys = {};
+      addEventListener('keydown', (e) => {
+        if (state !== 'playing') return;
+        const k = e.key.toLowerCase();
+        if (['arrowleft', 'arrowright', 'a', 'd'].includes(k)) { keys[k] = true; e.preventDefault(); }
+      });
+      addEventListener('keyup', (e) => { delete keys[e.key.toLowerCase()]; });
+      setInterval(() => {
+        if (state !== 'playing') return;
+        const dir = (keys.arrowright || keys.d ? 1 : 0) - (keys.arrowleft || keys.a ? 1 : 0);
+        if (dir) player.target = Math.max(28, Math.min(W - 28, player.target + dir * 26));
+      }, 30);
+      oBtn.addEventListener('click', start);
+
+      /* pauses automatically when the poem page isn't on screen or the tab is hidden */
+      new IntersectionObserver((es) => { visible = es[0].isIntersecting; schedule(); }, { threshold: 0.2 }).observe(canvas);
+      document.addEventListener('visibilitychange', schedule);
+
+      renderPoem(-1); renderLives(); draw(); idleOverlay();
+    })();
+
+    /* ---------- boot ---------- */
+    goStep(Math.min(store.get('ammalu_step', 0), maxOpen()));
+  </script>
+</body>
+</html>
